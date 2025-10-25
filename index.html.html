@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AnimeScape</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Arial;background:#0b1220;color:#e6eef8}
+
+  header{position:sticky;top:0;backdrop-filter:blur(6px);background:rgba(10,15,25,0.75);border-bottom:1px solid rgba(255,255,255,0.04);z-index:1000}
+  .container{max-width:1200px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px}
+  .logo{font-weight:700;font-size:18px;color:#fff;cursor:pointer}
+  nav{margin-left:auto;display:flex;align-items:center;gap:14px}
+
+  .search{display:flex;align-items:center;background:rgba(255,255,255,0.04);padding:6px 10px;border-radius:10px;gap:8px}
+  .search input{background:transparent;border:0;outline:0;color:#cfeaf6;width:240px}
+  .search button{background:#06b6d4;border:0;padding:8px 12px;border-radius:8px;color:#022;cursor:pointer}
+
+  .cats{display:flex;gap:8px;align-items:center;position:relative}
+  .chip{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,0.04);cursor:pointer;font-size:13px;color:#cfeaf6;border:1px solid rgba(255,255,255,0.02)}
+  .chip.active{background:linear-gradient(90deg,#06b6d4,#7dd3fc);color:#022;font-weight:600;border-color:transparent}
+
+  .animeMenu{position:relative; display:inline-block;}
+  .animeBtn{display:inline-flex;align-items:center;gap:6px}
+
+  .animeDropdown{
+    position:absolute; top:calc(100% + 8px); left:0; min-width:180px;
+    background:#0f1724; border:1px solid rgba(255,255,255,0.06);
+    border-radius:10px; padding:8px; box-shadow:0 10px 30px rgba(2,6,23,0.6);
+    display:none; flex-direction:column; gap:6px; z-index:3000
+  }
+  .animeDropdown.open{display:flex}
+  .animeItem{background:transparent;border:0;color:#e6eef8;padding:8px 10px;text-align:left;border-radius:8px;cursor:pointer;transition:background .18s,color .18s,transform .06s}
+  .animeItem:hover{background:#06b6d4;color:#022; transform:translateY(-1px)}
+
+  main{max-width:1200px;margin:20px auto;padding:0 20px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+  .card{position:relative;border-radius:12px;overflow:hidden;background:#071025;cursor:pointer}
+  .card img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
+  .card:hover img{transform:scale(1.05)}
+  .overlay{position:absolute;left:0;right:0;bottom:0;padding:10px;background:linear-gradient(180deg, rgba(2,6,12,0) 0%, rgba(2,6,12,0.7) 100%);color:#fff;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+  .btn-icon{background:rgba(0,0,0,0.7);border:0;padding:6px 8px;border-radius:8px;color:#fff;cursor:pointer;font-size:12px}
+
+  .empty{padding:40px;text-align:center;color:#94a3b8}
+
+  /* Lightbox */
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:none;align-items:center;justify-content:center;z-index:2000;padding:20px}
+  .lightbox.open{display:flex}
+  .lb-content{max-width:1200px;width:100%;max-height:90vh;background:#071425;border-radius:12px;overflow:hidden;display:flex;gap:12px}
+  .lb-img{flex:1;display:flex;align-items:center;justify-content:center;background:#03101a}
+  .lb-img img{max-width:100%;max-height:90vh;object-fit:contain}
+  .lb-side{width:320px;padding:18px;display:flex;flex-direction:column;gap:12px}
+  .lb-side h3{margin:0;font-size:18px}
+  .actions{display:flex;gap:8px;margin-top:auto}
+  .primary{background:#06b6d4;border:0;padding:10px 12px;border-radius:10px;color:#022;cursor:pointer}
+  .secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px 12px;border-radius:10px;color:#e6eef8;cursor:pointer}
+
+  @media (max-width:900px){
+    .lb-side{display:none}
+    .search input{width:140px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div class="logo" id="homeBtn" aria-label="Accueil">AnimeScape</div>
+    <nav>
+      <div class="search" role="search" aria-label="Recherche fonds d'écran">
+        <input id="search" type="search" placeholder="Rechercher (paysage, anime, espace)..." aria-label="Recherche" />
+        <button id="searchBtn">Rechercher</button>
+      </div>
+      <div class="cats" id="cats">
+        <button class="chip active" data-cat="all">Tout</button>
+        <button class="chip" data-cat="nature">Nature</button>
+        <div class="animeMenu">
+          <button class="chip animeBtn" id="animeBtn" aria-haspopup="true" aria-expanded="false" data-cat="anime">Anime ▼</button>
+          <div class="animeDropdown" id="animeDropdown" role="menu" aria-label="Choisir un anime"></div>
+        </div>
+        <button class="chip" data-cat="espace">Espace</button>
+        <button class="chip" data-cat="ville">Ville</button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div id="grid" class="grid" aria-live="polite"></div>
+  <div id="empty" class="empty" style="display:none">Aucun fond d'écran trouvé. Essaie d'autres mots-clés.</div>
+</main>
+
+<!-- Lightbox -->
+<div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="lb-content" role="document">
+    <div class="lb-img"><img id="lbImage" src="" alt="Aperçu fond d'écran" /></div>
+    <aside class="lb-side">
+      <h3 id="lbTitle">Titre</h3>
+      <p id="lbTags" style="color:#94a3b8;margin:0">Tags: —</p>
+      <p id="lbDim" style="color:#94a3b8;margin:0">Dimensions: —</p>
+      <div class="actions">
+        <a id="downloadLink" class="primary" href="#" download> Télécharger </a>
+        <button id="closeLb" class="secondary">Fermer</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<footer>© 2025 AnimeScape — Exemple de galerie</footer>
+
+<script>
+const WALLS = [
+      {id:1,title:'One piece',tags:['anime'],src:'https://w.wallhaven.cc/full/e7/wallhaven-e7j7jk.jpg',dim:'1920x1080'},
+      {id:2,title:'One piece',tags:['anime'],src:'https://w.wallhaven.cc/full/83/wallhaven-8376jo.jpg',dim:'1920x1080'},
+      {id:3,title:'One piece',tags:['anime'],src:'https://w.wallhaven.cc/full/0p/wallhaven-0pkxvj.jpg',dim:'3840×2400'},
+      {id:4,title:'One piece',tags:['anime'],src:'https://w.wallhaven.cc/full/42/wallhaven-422pmg.jpg',dim:'1920×1080'},
+	  {id:5,title:'One piece',tags:['anime'],src:'https://w.wallhaven.cc/full/28/wallhaven-28erkm.jpg',dim:'1920x1080',},
+      {id:6,title:'One piece',tags:['anime'],src:'https://w.wallhaven.cc/full/rr/wallhaven-rrlepq.jpg',dim:'1920x1080',},
+	  {id:8,title:'One piece',tags:['anime'],src:'https://w.wallhaven.cc/full/96/wallhaven-96753x.png',dim:'1920x1080',},
+	  {id:9,title:'One piece',tags:['anime'],src:'https://w.wallhaven.cc/full/dp/wallhaven-dp563j.jpg',dim:'1920x1080',},
+	  {id:10,title:'One piece',tags:['anime'],src:'https://w.wallhaven.cc/full/p8/wallhaven-p83lk3.jpg',dim:'1920x1080',},
+	  {id:11,title:'One piece',tags:['anime'],src:'https://w.wallhaven.cc/full/w5/wallhaven-w58g1q.png',dim:'1920x1080',},
+	  {id:12,title:'One piece',tags:['anime'],src:'https://w.wallhaven.cc/full/4d/wallhaven-4d3wz3.jpg',dim:'3840×2160',},
+	  {id:13,title:'Demon slayer',tags:['anime'],src:'https://w.wallhaven.cc/full/13/wallhaven-13ozrw.jpg',dim:'3840×2160',},
+	  {id:14,title:'Demon slayer',tags:['anime'],src:'https://w.wallhaven.cc/full/g7/wallhaven-g7jp57.jpg',dim:'3840×2160',},
+	  {id:15,title:'Demon slayer',tags:['anime'],src:'https://w.wallhaven.cc/full/rr/wallhaven-rrqz77.png',dim:'3840×2160',},
+	  {id:16,title:'Demon slayer',tags:['anime'],src:'https://w.wallhaven.cc/full/q2/wallhaven-q2xmz7.jpg',dim:'3840×2160',},
+	  {id:17,title:'Demon slayer',tags:['anime'],src:'https://w.wallhaven.cc/full/k7/wallhaven-k7vd96.png',dim:'3840×2160',},
+	  {id:18,title:'Demon slayer',tags:['anime'],src:'https://w.wallhaven.cc/full/9m/wallhaven-9mwj68.jpg',dim:'3840×2160',},
+	  {id:19,title:'Demon slayer',tags:['anime'],src:'https://w.wallhaven.cc/full/rr/wallhaven-rrqm3m.png',dim:'3840×2160',},
+	  {id:20,title:'Jujutsu kaisen',tags:['anime'],src:'https://w.wallhaven.cc/full/8o/wallhaven-8ogw6j.jpg',dim:'3840×2160',},
+	  {id:21,title:'Jujutsu kaisen',tags:['anime'],src:'https://w.wallhaven.cc/full/6d/wallhaven-6dgzpw.jpg',dim:'3840×2160',},
+	  {id:22,title:'Jujutsu kaisen',tags:['anime'],src:'https://w.wallhaven.cc/full/m3/wallhaven-m3ykqk.png',dim:'3840×2160',},
+	  {id:23,title:'Jujutsu kaisen',tags:['anime'],src:'https://w.wallhaven.cc/full/e7/wallhaven-e7xj8l.png',dim:'3840×2160',},
+	  {id:24,title:'Jujutsu kaisen',tags:['anime'],src:'https://w.wallhaven.cc/full/72/wallhaven-722mo9.png',dim:'3840×2160',},
+	  {id:25,title:'Jujutsu kaisen',tags:['anime'],src:'https://w.wallhaven.cc/full/d6/wallhaven-d6ox5l.png',dim:'3840×2160',},
+
+];
+
+const grid = document.getElementById('grid');
+const empty = document.getElementById('empty');
+const searchInput = document.getElementById('search');
+const searchBtn = document.getElementById('searchBtn');
+const chips = document.querySelectorAll('.chip');
+const animeBtn = document.getElementById('animeBtn');
+const animeDropdown = document.getElementById('animeDropdown');
+const homeBtn = document.getElementById('homeBtn');
+
+const lightbox = document.getElementById('lightbox');
+const lbImage = document.getElementById('lbImage');
+const lbTitle = document.getElementById('lbTitle');
+const lbTags = document.getElementById('lbTags');
+const lbDim = document.getElementById('lbDim');
+const downloadLink = document.getElementById('downloadLink');
+const closeLb = document.getElementById('closeLb');
+
+let activeCat = 'all';
+let selectedAnime = 'all';
+let results = WALLS.slice();
+
+function render(items){
+  grid.innerHTML = items.map(w => `
+    <article class="card" data-id="${w.id}" data-tags="${w.tags.join(' ')}">
+      <img loading="lazy" src="${w.src}" alt="${w.title}" />
+      <div class="overlay">
+        <strong style="font-size:13px">${w.title}</strong>
+        <button class="btn-icon" data-action="preview" data-id="${w.id}" title="Aperçu">Voir</button>
+      </div>
+    </article>
+  `).join('');
+  empty.style.display = items.length ? 'none' : 'block';
+
+  document.querySelectorAll('[data-action="preview"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = Number(btn.dataset.id);
+      openLightbox(WALLS.find(x=>x.id===id));
+    });
+  });
+}
+render(results);
+
+// Build anime dropdown
+function buildAnimeList(){
+  animeDropdown.innerHTML = '';
+  const animeNames = [...new Set(WALLS.filter(w=>w.tags.includes('anime')).map(w=>w.title))];
+
+  const allBtn = document.createElement('button');
+  allBtn.className = 'animeItem';
+  allBtn.textContent = 'Tous les animes';
+  allBtn.dataset.value = 'all';
+  allBtn.onclick = ()=>{
+    selectedAnime = 'all';
+    closeAnimeDropdown();
+    applyFilters();
+  };
+  animeDropdown.appendChild(allBtn);
+
+  animeNames.forEach(name=>{
+    const btn = document.createElement('button');
+    btn.className = 'animeItem';
+    btn.textContent = name;
+    btn.dataset.value = name.toLowerCase();
+    btn.onclick = ()=>{
+      selectedAnime = name.toLowerCase();
+      closeAnimeDropdown();
+      applyFilters();
+    };
+    animeDropdown.appendChild(btn);
+  });
+}
+buildAnimeList();
+
+// Dropdown toggle
+function openAnimeDropdown(){ animeDropdown.classList.add('open'); animeBtn.setAttribute('aria-expanded','true'); }
+function closeAnimeDropdown(){ animeDropdown.classList.remove('open'); animeBtn.setAttribute('aria-expanded','false'); }
+function toggleAnimeDropdown(){ animeDropdown.classList.contains('open')?closeAnimeDropdown():openAnimeDropdown(); }
+animeBtn.addEventListener('click', e=>{ e.stopPropagation(); toggleAnimeDropdown(); });
+document.addEventListener('click', e=>{ if(!animeDropdown.contains(e.target) && e.target!==animeBtn) closeAnimeDropdown(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAnimeDropdown(); });
+
+// Filters
+function applyFilters(){
+  const q = searchInput.value.trim().toLowerCase();
+  results = WALLS.filter(w=>{
+    const inCat = activeCat==='all'?true:w.tags.includes(activeCat);
+    const inAnime = selectedAnime==='all'?true:w.title.toLowerCase()===selectedAnime;
+    const inText = q ? (w.title.toLowerCase().includes(q) || w.tags.join(' ').toLowerCase().includes(q)) : true;
+    return inCat && inAnime && inText;
+  });
+  render(results);
+}
+
+// Category buttons
+document.querySelectorAll('.cats .chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    const cat = chip.dataset.cat;
+    if(cat==='anime'){ document.querySelectorAll('.cats .chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active'); activeCat='anime'; openAnimeDropdown(); return; }
+    document.querySelectorAll('.cats .chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active'); activeCat=cat; selectedAnime='all'; applyFilters();
+  });
+});
+
+searchBtn.addEventListener('click', applyFilters);
+searchInput.addEventListener('keydown', e=>{ if(e.key==='Enter') applyFilters(); });
+
+// Home button
+homeBtn.addEventListener('click', ()=>{
+  activeCat='all'; selectedAnime='all'; searchInput.value='';
+  document.querySelectorAll('.cats .chip').forEach(c=>c.classList.remove('active'));
+  document.querySelector('.cats .chip[data-cat="all"]').classList.add('active');
+  applyFilters();
+  closeAnimeDropdown();
+});
+
+// === Lightbox ===
+function openLightbox(item){
+  lbImage.src=item.src;
+  lbImage.alt=item.title;
+  lbTitle.textContent=item.title;
+  lbTags.textContent='Tags: '+item.tags.join(', ');
+  lbDim.textContent='Dimensions: '+item.dim;
+  downloadLink.href=item.src;
+  lightbox.classList.add('open');
+  lightbox.setAttribute('aria-hidden','false');
+}
+function closeLightbox(){
+  lightbox.classList.remove('open');
+  lightbox.setAttribute('aria-hidden','true');
+  lbImage.src='';
+}
+closeLb.addEventListener('click', closeLightbox);
+lightbox.addEventListener('click', e=>{ if(e.target===lightbox) closeLightbox(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLightbox(); });
+
+</script>
+</body>
+</html>
+
+
